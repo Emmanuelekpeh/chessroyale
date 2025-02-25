@@ -24,11 +24,6 @@ interface Config {
     ratingUpdateThreshold: number;
     calibrationInterval: number;
   };
-  ai: {
-    model: string;
-    temperature: number;
-    maxTokens: number;
-  };
 }
 
 const development: Config = {
@@ -38,23 +33,18 @@ const development: Config = {
     connectionTimeoutMillis: 2000,
   },
   server: {
-    port: Number(process.env.PORT) || 5000, // Changed from 3001 to 5000
+    port: Number(process.env.PORT) || 5000,
     host: "0.0.0.0",
     rateLimit: {
       windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 100, // limit each IP to 100 requests per windowMs
+      max: 100,
     },
-    timeout: 30000, // 30 seconds
+    timeout: 30000,
   },
   puzzle: {
     recommendationBatchSize: 5,
     ratingUpdateThreshold: 5,
-    calibrationInterval: 24 * 60 * 60 * 1000, // 24 hours
-  },
-  ai: {
-    model: "gpt-4",
-    temperature: 0.7,
-    maxTokens: 500,
+    calibrationInterval: 24 * 60 * 60 * 1000,
   },
 };
 
@@ -70,12 +60,8 @@ const production: Config = {
     ...development.server,
     rateLimit: {
       windowMs: 15 * 60 * 1000,
-      max: 300, // Higher limit for production
+      max: 300,
     },
-  },
-  ai: {
-    ...development.ai,
-    temperature: 0.5, // More conservative in production
   },
 };
 
@@ -88,7 +74,7 @@ const test: Config = {
   },
   server: {
     ...development.server,
-    port: 5000, // Updated to match development port
+    port: 5000,
   },
 };
 
