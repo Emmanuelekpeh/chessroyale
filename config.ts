@@ -8,6 +8,7 @@ interface Config {
     maxConnections: number;
     idleTimeoutMillis: number;
     connectionTimeoutMillis: number;
+    url?: string;
   };
   server: {
     port: number;
@@ -63,6 +64,7 @@ const production: Config = {
     maxConnections: 100,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 3000,
+    url: process.env.DATABASE_URL
   },
   server: {
     ...development.server,
