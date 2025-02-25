@@ -1,8 +1,7 @@
 import { Pool } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import config from '../../config';
-// Add logger import
-import { logger } from '../utils/logger';
+import { logger } from '../utils/logger';  // Add this import
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL must be set");
@@ -16,13 +15,14 @@ const pool = new Pool({
   connectionTimeoutMillis: config.database.connectionTimeoutMillis
 });
 
-// Add these event listeners after creating the pool
+// Add this connection event
 pool.on('connect', () => {
-  console.info('New database connection established');
+  logger.info('New database connection established');  // Using your logger instead of console.info
 });
 
+// Replace your existing error handler with this one
 pool.on('error', (err) => {
-  logger.error('Unexpected error on idle client', err);
+  logger.error('Unexpected error on idle client', err);  // Using your logger instead of console.error
   process.exit(-1);
 });
 
