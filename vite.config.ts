@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
 export default defineConfig({
   plugins: [react(), runtimeErrorOverlay(), themePlugin()],
   resolve: {
@@ -19,5 +20,21 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, "dist/public"),
     emptyOutDir: true,
+    sourcemap: true, // Add this line for better debugging
   },
+  server: {
+    port: 3000,
+    strictPort: true,
+    host: true,
+    // Add proxy configuration if you need to communicate with your backend
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      }
+    }
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom'] // Add this to improve dev performance
+  }
 });
