@@ -1,0 +1,32 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'yarn'
+          
+      - name: Install dependencies
+        run: |
+          yarn install --frozen-lockfile
+          
+      - name: Build
+        run: yarn build
+        
+      - name: Deploy
+        env:
+          RENDER_TOKEN: ${{ secrets.RENDER_TOKEN }}
+        run: |
+          curl -H "Authorization: Bearer $RENDER_TOKEN" \
+               -X POST https://api.render.com/v1/services/YOUR_SERVICE_ID/deploys
