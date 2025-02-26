@@ -8,33 +8,72 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Matches the server's port finding logic
+const DEFAULT_PORT = 3000;
+
 export default defineConfig({
-  plugins: [react(), runtimeErrorOverlay(), themePlugin()],
+  plugins: [
+    react({
+      // Fast Refresh is important for chess move updates
+      fastRefresh: true,
+    }),
+    runtimeErrorOverlay(),
+    themePlugin()
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "client", "src"),
       "@shared": path.resolve(__dirname, "shared"),
+      // Add chess-specific aliases
+      "@chess": path.resolve(__dirname, "client", "src", "chess"),
+      "@puzzles": path.resolve(__dirname, "client", "src", "puzzles"),
     },
   },
   root: path.resolve(__dirname, "client"),
   build: {
     outDir: path.resolve(__dirname, "dist/public"),
     emptyOutDir: true,
-    sourcemap: true, // Add this line for better debugging
+    sourcemap: true,
+    // Optimize for chess piece SVGs and puzzle data
+    assetsInlineLimit: 4096, // Inline small chess pieces
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'chess-vendor': ['chess.js'], // If you're using chess.js
+          'puzzle-data': ['/puzzles/**/*'], // Group puzzle-related code
+        },
+      },
+    },
   },
   server: {
-    port: 3000,
+    port: DEFAULT_PORT,
     strictPort: true,
     host: true,
-    // Add proxy configuration if you need to communicate with your backend
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: `http://localhost:${DEFAULT_PORT + 1}`,
         changeOrigin: true,
       }
-    }
+    },
+    // Improved HMR for development
+    hmr: {
+      overlay: true,
+      // Timeout increased for puzzle processing
+      timeout: 5000,
+    },
   },
   optimizeDeps: {
-    include: ['react', 'react-dom'] // Add this to improve dev performance
+    include: [
+      'react',
+      'react-dom',
+      // Add chess-specific dependencies if you're using them
+      'chess.js',
+      '@chrisoakman/chessboardjs'
+    ]
+  },
+  // Performance optimizations for chess calculations
+  esbuild: {
+    target: 'esnext',
+    logOverride: { 'this-is-undefined-in-esm': 'silent' }
   }
 });
