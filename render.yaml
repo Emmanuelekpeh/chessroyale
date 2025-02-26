@@ -2,14 +2,13 @@ services:
   - type: web
     name: chessroyale
     env: node
-    buildCommand: |
-      npm install -g vite
-      yarn install
-      yarn build
+    buildCommand: yarn install --frozen-lockfile && yarn build
     startCommand: yarn start
     envVars:
       - key: NODE_VERSION
         value: 18
+      - key: NODE_ENV
+        value: production
 
 databases:
   - name: chessroyale_db
