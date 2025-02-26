@@ -9,9 +9,3 @@ services:
         value: 18
       - key: NODE_ENV
         value: production
-
-databases:
-  - name: chessroyale_db
-    databaseName: chessroyale
-    user: chessroyale_user
-    plan: free
