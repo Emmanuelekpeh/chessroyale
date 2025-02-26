@@ -2,18 +2,14 @@ services:
   - type: web
     name: chessroyale
     env: node
-    buildCommand: yarn install && yarn build
+    buildCommand: |
+      npm install -g vite
+      yarn install
+      yarn build
     startCommand: yarn start
-    nodeVersion: 18.x
     envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: 8080
-      - key: DATABASE_URL
-        sync: false
-    healthCheckPath: /health
-    autoDeploy: true
+      - key: NODE_VERSION
+        value: 18
 
 databases:
   - name: chessroyale_db
