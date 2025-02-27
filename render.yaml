@@ -2,10 +2,8 @@ services:
   - type: web
     name: chessroyale
     env: node
-    buildCommand: yarn install --frozen-lockfile && yarn build
-    startCommand: yarn start
+    buildCommand: yarn install && yarn workspace @chessroyale/client add -D @tailwindcss/postcss postcss postcss-import tailwindcss autoprefixer && yarn build
+    startCommand: yarn workspace server start
     envVars:
       - key: NODE_VERSION
         value: 18
-      - key: NODE_ENV
-        value: production
