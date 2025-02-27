@@ -3,11 +3,8 @@ services:
     name: chessroyale
     env: node
     buildCommand: |
-      yarn install
-      yarn workspace @chessroyale/shared build
-      yarn workspace @chessroyale/server build
-      yarn workspace @chessroyale/client build
+      rm -f package-lock.json
+      yarn cache clean
+      yarn install --frozen-lockfile
+      yarn build
     startCommand: yarn workspace @chessroyale/server start
-    envVars:
-      - key: NODE_VERSION
-        value: 18
