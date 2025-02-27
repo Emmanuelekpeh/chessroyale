@@ -2,17 +2,18 @@
   "name": "chessroyale",
   "private": true,
   "version": "1.0.0",
-  "workspaces": {
-    "packages": [
-      "shared",
-      "client",
-      "server"
-    ]
-  },
+  "workspaces": [
+    "shared",
+    "client",
+    "server"
+  ],
   "scripts": {
-    "build": "yarn workspaces foreach -t run build",
+    "build": "yarn workspaces run build",
     "dev": "concurrently \"yarn workspace @chessroyale/client dev\" \"yarn workspace @chessroyale/server dev\"",
-    "test": "yarn workspaces foreach run test",
-    "lint": "yarn workspaces foreach run lint"
+    "test": "yarn workspaces run test",
+    "lint": "yarn workspaces run lint"
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.0"
   }
 }
