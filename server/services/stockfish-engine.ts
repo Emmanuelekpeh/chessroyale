@@ -1,4 +1,4 @@
-import { spawn } from 'child_process';
+import { spawn, Worker } from 'child_process';
 
 export interface StockfishAnalysis {
   score: number;
@@ -30,20 +30,19 @@ export class StockfishEngine {
   }
 
   private analysisCache: Map<string, StockfishAnalysis> = new Map();
-private readonly MAX_CACHE_SIZE = 1000;
+  private readonly MAX_CACHE_SIZE = 1000;
 
-private pruneCache() {
-  if (this.analysisCache.size > this.MAX_CACHE_SIZE) {
-    const keys = Array.from(this.analysisCache.keys());
-    const deleteCount = Math.floor(this.MAX_CACHE_SIZE * 0.2);
-    keys.slice(0, deleteCount).forEach(key => this.analysisCache.delete(key));
+  private pruneCache() {
+    if (this.analysisCache.size > this.MAX_CACHE_SIZE) {
+      const keys = Array.from(this.analysisCache.keys());
+      const deleteCount = Math.floor(this.MAX_CACHE_SIZE * 0.2);
+      keys.slice(0, deleteCount).forEach(key => this.analysisCache.delete(key));
+    }
   }
-}
-  private workerPool: Worker[] = [];
 
   private handleStockfishOutput(output: string) {
     if (!this.responseCallback) return;
-    
+
     const cacheKey = output.trim();
     if (this.analysisCache.has(cacheKey)) {
       this.responseCallback(this.analysisCache.get(cacheKey)!);
