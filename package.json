@@ -5,13 +5,16 @@
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"
-  },
-{
-  scripts": {
-    "setup": "yarn install && yarn db:setup",
-    "db:setup": "yarn db:push && ts-node scripts/init-db.ts",
-    "build": "yarn workspace client build && yarn workspace server build",
+  }
+  "scripts": {
+    "setup": "yarn && yarn db:setup",
+    "db:setup": "yarn db:migrate && yarn db:seed",
+    "db:migrate": "drizzle-kit push:pg",
+    "db:seed": "tsx scripts/seed.ts",
+    "build": "yarn workspaces run build",
     "dev": "concurrently \"yarn workspace client dev\" \"yarn workspace server dev\"",
+    "test": "yarn workspaces run test",
+    "lint": "yarn workspaces run lint"
   },
 
   "dependencies": {
