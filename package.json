@@ -6,14 +6,17 @@
     "server",
     "shared"
   ],
-  "scripts": {
+    "scripts": {
+    "prepare": "node scripts/check-dependencies.js && yarn install",
+    "postinstall": "yarn setup:env && yarn setup:python",
+    "setup:env": "node scripts/create-env.js",
+    "setup:python": "pip install scikit-learn numpy pandas",
+    "setup:db": "yarn db:migrate && yarn db:seed",
+    "db:migrate": "drizzle-kit push:pg",
+    "db:seed": "tsx scripts/seed.ts",
     "dev": "yarn workspaces foreach -pi run dev",
     "build": "yarn workspaces foreach -pi run build",
-    "test": "yarn workspaces foreach -pi run test",
-    "lint": "yarn workspaces foreach -pi run lint",
-    "db:migrate": "yarn workspace server run db:migrate",
-    "db:seed": "yarn workspace server run db:seed",
-    "clean": "yarn workspaces foreach -pi run clean"
+    "start": "node dist/server/index.js"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.0.0",
