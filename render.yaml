@@ -2,8 +2,12 @@ services:
   - type: web
     name: chessroyale
     env: node
-    buildCommand: yarn install && yarn workspace @chessroyale/client add -D @tailwindcss/postcss postcss postcss-import tailwindcss autoprefixer && yarn build
-    startCommand: yarn workspace server start
+    buildCommand: |
+      yarn install
+      yarn workspace @chessroyale/shared build
+      yarn workspace @chessroyale/server build
+      yarn workspace @chessroyale/client build
+    startCommand: yarn workspace @chessroyale/server start
     envVars:
       - key: NODE_VERSION
         value: 18
