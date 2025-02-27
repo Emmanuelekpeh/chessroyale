@@ -10,7 +10,6 @@ router.post("/import-puzzles", async (req, res) => {
     const count = req.query.count ? parseInt(req.query.count as string) : 10;
     const puzzles = await chessApiService.importPuzzlesFromLichess(count);
 
-    // Save imported puzzles to our database
     for (const puzzle of puzzles) {
       await storage.createPuzzle({
         title: puzzle.isDaily ? "Daily Lichess Puzzle" : "Lichess Puzzle",
@@ -27,7 +26,7 @@ router.post("/import-puzzles", async (req, res) => {
     }
 
     res.json(puzzles);
-  } catch (error: unknown) {
+  } catch (error) {
     console.error('Error importing Lichess puzzles:', error);
     res.status(500).json({ error: 'Failed to import Lichess puzzles' });
   }
@@ -36,7 +35,6 @@ router.post("/import-puzzles", async (req, res) => {
 router.post("/create-study", async (req, res) => {
   try {
     const { title, puzzleIds } = req.body;
-
     const puzzles = await Promise.all(
       puzzleIds.map((id: number) => storage.getPuzzle(id))
     );
