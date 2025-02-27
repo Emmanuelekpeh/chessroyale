@@ -1,0 +1,22 @@
+{
+  "name": "@chessroyale/server",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "test": "vitest",
+    "lint": "eslint src --ext .ts",
+    "db:migrate": "drizzle-kit push:pg",
+    "db:seed": "tsx scripts/seed.ts"
+  },
+  "dependencies": {
+    "express": "^4.0.0",
+    "drizzle-orm": "^0.28.0",
+    "@chessroyale/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.19.0",
+    "tsx": "^3.12.0"
+  }
+}
