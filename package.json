@@ -1,20 +1,20 @@
 {
   "name": "chessroyale",
+  "private": true,
   "version": "1.0.0",
-  "type": "module",
-  "license": "MIT",
-  "engines": {
-    "node": ">=18.0.0"
-  },
+  "workspaces": [
+    "client",
+    "server",
+    "shared"
+  ],
   "scripts": {
-    "setup": "yarn && yarn db:setup",
-    "db:setup": "yarn db:migrate && yarn db:seed",
-    "db:migrate": "drizzle-kit push:pg",
-    "db:seed": "tsx scripts/seed.ts",
     "build": "yarn workspaces run build",
     "dev": "concurrently \"yarn workspace client dev\" \"yarn workspace server dev\"",
     "test": "yarn workspaces run test",
     "lint": "yarn workspaces run lint"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -122,9 +122,4 @@
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
   },
-  "workspaces": [
-    "client",
-    "server",
-    "shared"
-  ]
 }
