@@ -1,8 +1,12 @@
-module.exports = {
+// Change from CommonJS to ES Module syntax
+import tailwindcss from 'tailwindcss'
+import autoprefixer from 'autoprefixer'
+import postcssImport from 'postcss-import'
+
+export default {
   plugins: [
-    require('postcss-import'),
-    require('tailwindcss/nesting'),
-    require('tailwindcss'),
-    require('autoprefixer'),
+    postcssImport,
+    tailwindcss,
+    autoprefixer,
   ]
 }
