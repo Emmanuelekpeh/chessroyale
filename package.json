@@ -6,7 +6,8 @@
   "engines": {
     "node": ">=18.0.0"
   },
-scripts": {
+{
+  scripts": {
     "setup": "yarn install && yarn db:setup",
     "db:setup": "yarn db:push && ts-node scripts/init-db.ts",
     "build": "yarn workspace client build && yarn workspace server build",
