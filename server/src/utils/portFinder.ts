@@ -1,58 +1,44 @@
-import { createServer } from 'net';
+import net from 'net';
 
-interface PortResult {
-  port: number;
-  success: boolean;
-  error?: string;
-}
-
-function findFreePort(startPort: number = 3000, endPort: number = 65535): Promise<PortResult> {
-  return new Promise((resolve) => {
-    const server = createServer();
-
-    const tryPort = (port: number) => {
-      server.once('error', () => {
-        if (port < endPort) {
-          tryPort(port + 1);
-        } else {
-          resolve({
-            port: startPort,
-            success: false,
-            error: 'No free port found in range'
-          });
-        }
-      });
-
-      server.once('listening', () => {
-        server.close(() => {
-          resolve({
-            port,
-            success: true
-          });
-        });
-      });
-
-      server.listen(port, '0.0.0.0');
-    };
-
-    tryPort(startPort);
-  });
-}
-
-// For CLI usage
-if (require.main === module) {
-  const [,, start, end] = process.argv;
-  const startPort = parseInt(start) || 3000;
-  const endPort = parseInt(end) || 65535;
-
-  findFreePort(startPort, endPort)
-    .then((result) => {
-      console.log(JSON.stringify({
-        port: result.port,
-        status: result.success ? 'success' : 'error',
-        ...(result.error && { error: result.error })
-      }));
+/**
+ * Finds an available port starting from the given port
+ * @param startPort The port to start checking from
+ * @returns A promise that resolves to an available port
+ */
+export const findAvailablePort = (startPort: number): Promise<number> => {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    
+    server.on('error', (err: NodeJS.ErrnoException) => {
+      if (err.code === 'EADDRINUSE') {
+        // Port is in use, try the next one
+        findAvailablePort(startPort + 1)
+          .then(resolve)
+          .catch(reject);
+      } else {
+        reject(err);
+      }
     });
-}
+    
+    server.listen(startPort, () => {
+      server.close(() => {
+        resolve(startPort);
+      });
+    });
+  });
+};
 
-export { findFreePort };
+/**
+ * Creates a port checker function that verifies if a port is available
+ * @returns A function that checks if a port is available
+ */
+export const createPortChecker = () => {
+  return (port: number): Promise<boolean> => {
+    return new Promise(resolve => {
+      const server = net.createServer();
+      
+      server.once('error', () => {
+        resolve(false);
+      });
+      
+      server
