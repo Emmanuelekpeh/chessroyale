@@ -12,25 +12,11 @@
     "paths": {
       "@/*": ["./src/*"],
       "@shared/*": ["../shared/src/*"]
-    },
-    "types": [
-      "node",
-      "express",
-      "passport",
-      "passport-local",
-      "express-session",
-      "cors",
-      "compression",
-      "ws"
-    ],
-    "rootDir": ".",
-    "allowJs": true,
-    "resolveJsonModule": true
+    }
   },
   "include": [
     "src/**/*",
-    "vite.config.ts",
-    "config.ts"
+    "vite.config.ts"
   ],
   "exclude": ["node_modules", "dist"],
   "references": [{ "path": "../shared" }]
