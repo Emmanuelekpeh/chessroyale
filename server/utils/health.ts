@@ -37,3 +37,7 @@ router.get('/health', async (req, res) => {
 });
 
 export default router;
+
+export function checkHealth() {
+  return { status: 'healthy' };
+}

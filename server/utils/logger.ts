@@ -103,4 +103,5 @@ class Logger {
   }
 }
 
+// Export the singleton instance
 export const logger = Logger.getInstance();
