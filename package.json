@@ -4,12 +4,12 @@
   "version": "1.0.0",
   "workspaces": [
     "shared",
-    "client",
-    "server"
+    "server",
+    "client"
   ],
   "scripts": {
-    "build": "yarn workspace @chessroyale/shared build && yarn workspace @chessroyale/server build && yarn workspace @chessroyale/client build",
-    "dev": "concurrently \"yarn workspace @chessroyale/client dev\" \"yarn workspace @chessroyale/server dev\"",
+    "build": "yarn install && yarn workspaces run build",
+    "dev": "yarn workspaces run dev",
     "start": "yarn workspace @chessroyale/server start"
   },
   "devDependencies": {
