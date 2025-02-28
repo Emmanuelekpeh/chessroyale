@@ -3,8 +3,11 @@ services:
     name: chessroyale
     env: node
     buildCommand: |
-      rm -f package-lock.json
-      yarn cache clean
-      yarn install --frozen-lockfile
-      yarn build
+      chmod +x setup.sh
+      ./setup.sh
     startCommand: yarn workspace @chessroyale/server start
+    envVars:
+      - key: NODE_VERSION
+        value: 18
+      - key: PORT
+        value: 3000
