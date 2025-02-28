@@ -1,11 +1,11 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express, Request, Response, NextFunction } from "express";
+import { Express } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User as SelectUser } from "@shared/schema";
+import { User as SelectUser } from "../../shared/src/schema"; // Corrected path
 import { Store } from "express-session";
 import MemoryStore from "memorystore";
 
@@ -18,13 +18,13 @@ declare global {
 const scryptAsync = promisify(scrypt);
 const MemoryStoreSession = MemoryStore(session);
 
-async function hashPassword(password: string): Promise<string> {
+async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
   return `${buf.toString("hex")}.${salt}`;
 }
 
-async function comparePasswords(supplied: string, stored: string | null): Promise<boolean> {
+async function comparePasswords(supplied: string, stored: string | null) {
   if (!stored) return false;
   const [hashed, salt] = stored.split(".");
   const hashedBuf = Buffer.from(hashed, "hex");
@@ -32,7 +32,7 @@ async function comparePasswords(supplied: string, stored: string | null): Promis
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
-export function setupAuth(app: Express): void {
+export function setupAuth(app: Express) {
   if (!process.env.SESSION_SECRET) {
     console.warn("No SESSION_SECRET set, using fallback secret. This is not secure for production!");
   }
@@ -62,7 +62,7 @@ export function setupAuth(app: Express): void {
   app.use(passport.session());
 
   passport.use(
-    new LocalStrategy(async (username: string, password: string, done: (error: any, user?: any, options?: { message: string }) => void) => {
+    new LocalStrategy(async (username: string, password: string, done) => {
       try {
         const user = await storage.getUserByUsername(username);
         if (!user || !(await comparePasswords(password, user.password))) {
@@ -75,11 +75,11 @@ export function setupAuth(app: Express): void {
     }),
   );
 
-  passport.serializeUser((user: Express.User, done: (err: any, id?: number) => void) => {
+  passport.serializeUser((user, done) => {
     done(null, user.id);
   });
 
-  passport.deserializeUser(async (id: number, done: (err: any, user?: Express.User | false) => void) => {
+  passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUser(id);
       if (!user) {
@@ -91,7 +91,8 @@ export function setupAuth(app: Express): void {
     }
   });
 
-  app.post("/api/register", async (req: Request, res: Response, next: NextFunction) => {
+  // Auth routes with better error handling
+  app.post("/api/register", async (req, res, next) => {
     try {
       const existingUser = await storage.getUserByUsername(req.body.username);
       if (existingUser) {
@@ -110,7 +111,7 @@ export function setupAuth(app: Express): void {
         score: 0,
       });
 
-      req.login(user, (err: Error | null) => {
+      req.login(user, (err) => {
         if (err) return next(err);
         res.status(201).json({ user: { ...user, password: undefined } });
       });
@@ -120,7 +121,7 @@ export function setupAuth(app: Express): void {
     }
   });
 
-  app.post("/api/login", (req: Request, res: Response, next: NextFunction) => {
+  app.post("/api/login", (req, res, next) => {
     passport.authenticate("local", (err: Error | null, user: SelectUser | false, info: { message: string } | undefined) => {
       if (err) return next(err);
       if (!user) {
@@ -133,14 +134,14 @@ export function setupAuth(app: Express): void {
     })(req, res, next);
   });
 
-  app.post("/api/logout", (req: Request, res: Response, next: NextFunction) => {
-    req.logout((err: Error | null) => {
+  app.post("/api/logout", (req, res, next) => {
+    req.logout((err) => {
       if (err) return next(err);
       res.sendStatus(200);
     });
   });
 
-  app.get("/api/user", (req: Request, res: Response) => {
+  app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ error: "Not authenticated" });
     }
@@ -148,9 +149,9 @@ export function setupAuth(app: Express): void {
   });
 
   // Rate limiting for guest creation
-  const guestCreationLimiter = new Map<string, number>();
+  const guestCreationLimiter = new Map();
 
-  app.post("/api/guest", async (req: Request, res: Response, next: NextFunction) => {
+  app.post("/api/guest", async (req, res, next) => {
     try {
       const clientIp = req.ip;
       const now = Date.now();
@@ -174,7 +175,7 @@ export function setupAuth(app: Express): void {
         score: 0,
       });
 
-      req.login(user, (err: Error | null) => {
+      req.login(user, (err) => {
         if (err) return next(err);
         res.status(201).json({ user: { ...user, password: undefined } });
       });
