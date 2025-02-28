@@ -6,7 +6,11 @@ import compression from 'compression';
 import { setupAuth } from "./auth";
 import { setupVite } from "./vite";
 import { createServer } from "http";
-import healthRouter from "./health";
+import { routes } from "./routes";  // Import all routes
+import healthRouter from "./utils/health";
+import { errorHandler } from "./middleware/errorHandler";
+import { securityMiddleware } from "./middleware/security";
+import { sessionMiddleware } from "./middleware/session";
 
 const app = express();
 
