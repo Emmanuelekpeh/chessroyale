@@ -6,7 +6,8 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src')
+      '@': path.resolve(__dirname, './src'),
+      '@shared': path.resolve(__dirname, '../shared/src')  // Add this new line
     }
   },
   build: {
@@ -17,4 +18,4 @@ export default defineConfig({
     port: 3000,
     host: true
   }
-}) 
+})
