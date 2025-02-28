@@ -8,17 +8,17 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "clean": "rimraf dist"    // Add clean script
+    "clean": "rimraf dist"   
   },
   "dependencies": {
     "zod": "^3.22.4",
     "drizzle-orm": "^0.29.3",
-    "drizzle-zod": "^0.5.0",  // Add this
+    "drizzle-zod": "^0.5.0",  
     "@neondatabase/serverless": "^0.7.0"
   },
   "devDependencies": {
     "typescript": "^5.3.3",
     "drizzle-kit": "^0.20.14",
-    "rimraf": "^5.0.0"       // Add this for clean script
+    "rimraf": "^5.0.0"     
   }
 }
