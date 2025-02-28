@@ -1,23 +1,9 @@
 import { z } from 'zod';
-import { pgTable, serial, text, integer, boolean, varchar, PgArray } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, integer, boolean, varchar } from 'drizzle-orm/pg-core';
+import { type PgArray } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import type { User, Puzzle, Achievement } from './types';
-import type { GameState, ChatMessage } from '../types/game';
-
-// Try-catch for drizzle-zod import
-let createInsertSchema: any;
-let createSelectSchema: any;
-
-try {
-  const drizzleZod = require('drizzle-zod');
-  createInsertSchema = drizzleZod.createInsertSchema;
-  createSelectSchema = drizzleZod.createSelectSchema;
-} catch (e) {
-  console.warn('drizzle-zod not available, using fallback schemas');
-  createInsertSchema = (table: any) => z.object({});
-  createSelectSchema = (table: any) => z.object({});
-}
-
+import type { GameState, ChatMessage } from './types/game';
 
 // Database Tables
 export const users = pgTable('users', {
@@ -45,7 +31,7 @@ export const puzzles = pgTable('puzzles', {
   title: varchar('title', { length: 255 }).notNull(),
   description: text('description').notNull(),
   rating: integer('rating').notNull(),
-  tacticalTheme: PgArray('tactical_theme', text).notNull(),
+  tacticalTheme: text('tactical_theme').array().notNull(),
   difficulty: varchar('difficulty', { length: 20 }).notNull(),
   verified: boolean('verified').notNull().default(false),
   hintsAvailable: integer('hints_available').notNull(),
@@ -71,7 +57,7 @@ export const games = pgTable('games', {
   blackPlayer: integer('black_player').references(() => users.id),
   timeControlInitial: integer('time_control_initial').notNull(),
   timeControlIncrement: integer('time_control_increment').notNull(),
-  moves: PgArray('moves', text).notNull().default([]),
+  moves: text('moves').array().notNull().default([]),
   status: varchar('status', { length: 20 }).notNull(),
   winner: varchar('winner', { length: 20 }),
   startedAt: integer('started_at').notNull()
@@ -81,17 +67,17 @@ export const games = pgTable('games', {
 export const userSchema = z.object({
   id: z.number().optional(),
   username: z.string().min(3).max(30),
-  rating: z.number().min(0).default(1200),
-  gamesPlayed: z.number().min(0).default(0),
-  gamesWon: z.number().min(0).default(0),
-  puzzlesSolved: z.number().min(0).default(0),
-  score: z.number().min(0).default(0),
-  currentStreak: z.number().min(0).default(0),
-  bestStreak: z.number().min(0).default(0),
-  totalPoints: z.number().min(0).default(0),
-  level: z.number().min(1).default(1),
+  rating: z.number().default(1200),
+  gamesPlayed: z.number().default(0),
+  gamesWon: z.number().default(0),
+  puzzlesSolved: z.number().default(0),
+  score: z.number().default(0),
+  currentStreak: z.number().default(0),
+  bestStreak: z.number().default(0),
+  totalPoints: z.number().default(0),
+  level: z.number().default(1),
   isGuest: z.boolean().default(false)
-}) satisfies z.ZodType<User>;
+}) as z.ZodType<User>;
 
 export const puzzleSchema = z.object({
   id: z.number().optional(),
@@ -104,42 +90,12 @@ export const puzzleSchema = z.object({
   tacticalTheme: z.array(z.string()),
   difficulty: z.enum(['beginner', 'intermediate', 'advanced']),
   verified: z.boolean().default(false),
-  hintsAvailable: z.number().min(0),
-  pointValue: z.number().min(0),
-  totalAttempts: z.number().min(0).default(0),
-  successfulAttempts: z.number().min(0).default(0),
-  averageTimeToSolve: z.number().min(0).default(0)
-}) satisfies z.ZodType<Puzzle>;
-
-export const achievementSchema = z.object({
-  id: z.number().optional(),
-  name: z.string(),
-  description: z.string(),
-  type: z.enum(['puzzles_solved', 'rating', 'streak', 'total_points']),
-  requiredValue: z.number(),
-  pointReward: z.number()
-}) satisfies z.ZodType<Achievement>;
-
-export const gameSchema = z.object({
-  id: z.string(),
-  fen: z.string(),
-  players: z.object({
-    white: z.string(),
-    black: z.string()
-  }),
-  timeControl: z.object({
-    initial: z.number(),
-    increment: z.number()
-  }),
-  moves: z.array(z.string()),
-  status: z.enum(['waiting', 'active', 'completed']),
-  winner: z.enum(['white', 'black', 'draw']).optional(),
-  chat: z.array(z.object({
-    sender: z.string(),
-    content: z.string(),
-    timestamp: z.number()
-  }))
-}) satisfies z.ZodType<GameState>;
+  hintsAvailable: z.number(),
+  pointValue: z.number(),
+  totalAttempts: z.number().default(0),
+  successfulAttempts: z.number().default(0),
+  averageTimeToSolve: z.number().default(0)
+}) as z.ZodType<Puzzle>;
 
 // Export types
 export type DbUser = typeof users.$inferSelect;
@@ -153,16 +109,3 @@ export type NewDbAchievement = typeof achievements.$inferInsert;
 
 export type DbGame = typeof games.$inferSelect;
 export type NewDbGame = typeof games.$inferInsert;
-
-// Drizzle-zod schemas
-export const insertUserSchema = createInsertSchema(users);
-export const selectUserSchema = createSelectSchema(users);
-
-export const insertPuzzleSchema = createInsertSchema(puzzles);
-export const selectPuzzleSchema = createSelectSchema(puzzles);
-
-export const insertAchievementSchema = createInsertSchema(achievements);
-export const selectAchievementSchema = createSelectSchema(achievements);
-
-export const insertGameSchema = createInsertSchema(games);
-export const selectGameSchema = createSelectSchema(games);
