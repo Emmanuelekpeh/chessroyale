@@ -41,4 +41,13 @@ export const createPortChecker = () => {
         resolve(false);
       });
       
-      server
+      server.once('listening', () => {
+        server.close(() => {
+          resolve(true);
+        });
+      });
+      
+      server.listen(port);
+    });
+  };
+};
