@@ -1,16 +1,11 @@
-import * as React from "react";
-import { useParams, useLocation } from "wouter";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { Game } from "@shared/schema";
+import React, { useState, useEffect } from 'react';
 import { useAuth } from "@/hooks/use-auth";
-import { useWebSocket } from "@/hooks/use-websocket";
 import ChessBoard from "@/components/chess-board";
 import GameChat from "@/components/game-chat";
 import PuzzleTimer from "@/components/puzzle-timer";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { useWebSocket } from "@/hooks/use-websocket";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+
 
 export default function GameRoom() {
   const { id } = useParams();
