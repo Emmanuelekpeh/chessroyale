@@ -1,194 +1,217 @@
+import express from "express";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express, Request, Response, NextFunction } from "express";
-import session from "express-session";
-import { scrypt, randomBytes, timingSafeEqual } from "crypto";
-import { promisify } from "util";
-import { storage } from "./storage";
-import { User } from "../../shared/src/types";  // Updated import path
-import { Store } from "express-session";
-import MemoryStore from "memorystore";
+import bcrypt from "bcrypt";
+import { getUserByUsername, getUserById, createUser } from "./storage";
+import jwt from "jsonwebtoken";
 
-declare global {
-  namespace Express {
-    interface User extends User {}
-  }
+const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
+const BCRYPT_SALT_ROUNDS = 10;
+
+// Define non-recursive User type
+interface User {
+  id: number;
+  username: string;
+  passwordHash: string;
+  email?: string;
+  rating: number;
+  gamesPlayed: number;
+  gamesWon: number;
+  puzzlesSolved: number;
+  puzzleRating: number;
+  createdAt: Date;
+  updatedAt: Date;
+  isGuest: boolean;
 }
 
-const scryptAsync = promisify(scrypt);
-const MemoryStoreSession = MemoryStore(session);
+// Setting up passport auth
+passport.use(
+  new LocalStrategy(async (username, password, done) => {
+    try {
+      const user = await getUserByUsername(username);
+      if (!user) {
+        return done(null, false, { message: "Incorrect username." });
+      }
 
-async function hashPassword(password: string): Promise<string> {
-  const salt = randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
-}
+      const isValid = await bcrypt.compare(password, user.passwordHash);
+      if (!isValid) {
+        return done(null, false, { message: "Incorrect password." });
+      }
 
-async function comparePasswords(supplied: string, stored: string | null): Promise<boolean> {
-  if (!stored) return false;
-  const [hashed, salt] = stored.split(".");
-  const hashedBuf = Buffer.from(hashed, "hex");
-  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  return timingSafeEqual(hashedBuf, suppliedBuf);
-}
+      return done(null, user);
+    } catch (error) {
+      return done(error);
+    }
+  })
+);
 
-export function setupAuth(app: Express): void {
-  if (!process.env.SESSION_SECRET) {
-    console.warn("No SESSION_SECRET set, using fallback secret. This is not secure for production!");
+passport.serializeUser((user: any, done) => {
+  done(null, user.id);
+});
+
+passport.deserializeUser(async (id: number, done) => {
+  try {
+    const user = await getUserById(id);
+    done(null, user);
+  } catch (error) {
+    done(error);
   }
+});
 
-  const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || "chess-puzzle-dev-secret",
-    resave: false,
-    saveUninitialized: false,
-    name: 'chess.sid',
-    store: storage.sessionStore,
-    cookie: {
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: '/',
-      httpOnly: true
-    },
-  };
+export function configureAuth(app: express.Application) {
+  app.use(passport.initialize() as express.RequestHandler);
+  app.use(passport.session() as express.RequestHandler);
 
-  if (app.get("env") === "production") {
-    app.set("trust proxy", 1);
-    sessionSettings.cookie!.secure = true;
-  }
+  // Login endpoint
+  app.post("/api/auth/login", (req, res, next) => {
+    passport.authenticate("local", (err, user, info) => {
+      if (err) {
+        return next(err);
+      }
+      if (!user) {
+        return res.status(401).json({ message: info.message });
+      }
 
-  app.use(session(sessionSettings));
-  app.use(passport.initialize());
-  app.use(passport.session());
-
-  passport.use(
-    new LocalStrategy(async (username: string, password: string, done: (error: any, user?: any, options?: { message: string }) => void) => {
-      try {
-        const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePasswords(password, user.password))) {
-          return done(null, false, { message: "Invalid username or password" });
+      req.logIn(user, (err) => {
+        if (err) {
+          return next(err);
         }
-        return done(null, user);
-      } catch (error) {
-        return done(error);
-      }
-    }),
-  );
 
-  passport.serializeUser((user: Express.User, done: (err: any, id?: number) => void) => {
-    done(null, user.id);
-  });
+        // Create a JWT token
+        const token = jwt.sign(
+          {
+            id: user.id,
+            username: user.username,
+            expiresIn: "24h",
+          },
+          JWT_SECRET
+        );
 
-  passport.deserializeUser(async (id: number, done: (err: any, user?: Express.User | false) => void) => {
-    try {
-      const user = await storage.getUser(id);
-      if (!user) {
-        return done(new Error("User not found"));
-      }
-      done(null, user);
-    } catch (error) {
-      done(error);
-    }
-  });
-
-  app.post("/api/register", async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const existingUser = await storage.getUserByUsername(req.body.username);
-      if (existingUser) {
-        return res.status(400).json({ error: "Username already exists" });
-      }
-
-      const hashedPassword = await hashPassword(req.body.password);
-      const user = await storage.createUser({
-        username: req.body.username,
-        password: hashedPassword,
-        isGuest: false,
-        rating: 1200,
-        gamesPlayed: 0,
-        gamesWon: 0,
-        puzzlesSolved: 0,
-        score: 0,
-        currentStreak: 0,
-        bestStreak: 0,
-        totalPoints: 0,
-        level: 1
-      });
-
-      req.login(user, (err: Error | null) => {
-        if (err) return next(err);
-        res.status(201).json({ user: { ...user, password: undefined } });
-      });
-    } catch (error) {
-      console.error('Registration error:', error);
-      next(error);
-    }
-  });
-
-  app.post("/api/login", (req: Request, res: Response, next: NextFunction) => {
-    passport.authenticate("local", (err: Error | null, user: User | false, info: { message: string } | undefined) => {
-      if (err) return next(err);
-      if (!user) {
-        return res.status(401).json({ error: info?.message || "Authentication failed" });
-      }
-      req.login(user, (err) => {
-        if (err) return next(err);
-        res.json({ user: { ...user, password: undefined } });
+        return res.status(200).json({
+          message: "Login successful",
+          user: {
+            id: user.id,
+            username: user.username,
+            rating: user.rating,
+            puzzleRating: user.puzzleRating,
+          },
+          token,
+        });
       });
     })(req, res, next);
   });
 
-  app.post("/api/logout", (req: Request, res: Response, next: NextFunction) => {
-    req.logout((err: Error | null) => {
-      if (err) return next(err);
-      res.sendStatus(200);
+  // Register endpoint
+  app.post(
+    "/api/auth/register",
+    async (req, res, next) => {
+      const { username, password, email } = req.body;
+
+      if (!username || !password) {
+        return res.status(400).json({
+          message: "Username and password are required",
+        });
+      }
+
+      try {
+        const existingUser = await getUserByUsername(username);
+        if (existingUser) {
+          return res.status(409).json({
+            message: "Username already exists",
+          });
+        }
+
+        const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
+        const newUser = await createUser(username, passwordHash, email);
+
+        // Create a JWT token
+        const token = jwt.sign(
+          {
+            id: newUser.id,
+            username: newUser.username,
+            expiresIn: "24h",
+          },
+          JWT_SECRET
+        );
+
+        return res.status(201).json({
+          message: "Registration successful",
+          user: {
+            id: newUser.id,
+            username: newUser.username,
+            rating: newUser.rating,
+            puzzleRating: newUser.puzzleRating,
+          },
+          token,
+        });
+      } catch (error) {
+        return next(error);
+      }
+    }
+  );
+
+  // Logout endpoint
+  app.post("/api/auth/logout", (req, res) => {
+    req.logout(() => {
+      res.status(200).json({ message: "Logout successful" });
     });
   });
 
-  app.get("/api/user", (req: Request, res: Response) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: "Not authenticated" });
-    }
-    res.json({ user: { ...req.user, password: undefined } });
-  });
+  // JWT Middleware for protected routes
+  app.use("/api/protected", authenticateJWT);
 
-  // Rate limiting for guest creation
-  const guestCreationLimiter = new Map<string, number>();
+  return app;
+}
 
-  app.post("/api/guest", async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const clientIp = req.ip;
-      const now = Date.now();
-      const lastCreation = guestCreationLimiter.get(clientIp) || 0;
+// Middleware to check if user is authenticated
+export function isAuthenticated(
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.status(401).json({ message: "Unauthorized" });
+}
 
-      if (now - lastCreation < 60000) { // 1 minute cooldown
-        return res.status(429).json({ error: "Please wait before creating another guest account" });
-      }
+// Middleware to validate JWT tokens
+export function authenticateJWT(
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ message: "Authorization header missing" });
+  }
 
-      guestCreationLimiter.set(clientIp, now);
-      const guestId = Math.random().toString(36).substring(7);
-      const hashedPassword = await hashPassword(guestId);
-      const user = await storage.createUser({
-        username: `guest_${guestId}`,
-        password: hashedPassword,
-        isGuest: true,
-        rating: 1200,
-        gamesPlayed: 0,
-        gamesWon: 0,
-        puzzlesSolved: 0,
-        score: 0,
-        currentStreak: 0,
-        bestStreak: 0,
-        totalPoints: 0,
-        level: 1
-      });
+  const token = authHeader.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ message: "Token missing" });
+  }
 
-      req.login(user, (err: Error | null) => {
-        if (err) return next(err);
-        res.status(201).json({ user: { ...user, password: undefined } });
-      });
-    } catch (error) {
-      console.error('Guest login error:', error);
-      next(error);
-    }
-  });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    (req as any).user = decoded;
+    next();
+  } catch (error) {
+    return res.status(403).json({ message: "Invalid or expired token" });
+  }
+}
+
+// Create guest user
+export async function createGuestUser(): Promise<User> {
+  const guestId = `guest_${Math.random().toString(36).substring(2, 10)}`;
+  const passwordHash = await bcrypt.hash(
+    Math.random().toString(36),
+    BCRYPT_SALT_ROUNDS
+  );
+  const user = await createUser(guestId, passwordHash);
+  
+  // Update user to mark as guest
+  return {
+    ...user,
+    isGuest: true
+  } as User;
 }
