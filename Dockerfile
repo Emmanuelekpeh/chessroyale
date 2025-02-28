@@ -1,24 +1,23 @@
-FROM node:18-slim
+# Use an official node image as a parent image
+FROM node:18-alpine
 
-# Install Stockfish
-RUN apt-get update && apt-get install -y stockfish
+# Set the working directory
+WORKDIR /usr/src/app
 
-WORKDIR /app
-
-# Copy package files
-COPY package.json yarn.lock ./
+# Copy the package.json and package-lock.json
+COPY package*.json ./
 
 # Install dependencies
-RUN yarn install --frozen-lockfile
+RUN npm install
 
-# Copy source code
+# Copy the rest of the application code
 COPY . .
 
-# Build TypeScript
-RUN yarn build
+# Build the application
+RUN npm run build
 
-# Expose port
+# Expose the port the app runs on
 EXPOSE 8080
 
 # Start the application
-CMD ["yarn", "start"]
+CMD ["npm", "start"]
