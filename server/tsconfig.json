@@ -3,21 +3,11 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "CommonJS",
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "strict": true,
-    "skipLibCheck": true,
     "outDir": "dist",
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"],
-      "@shared/*": ["../shared/src/*"]
-    }
+    "rootDir": "src",
+    "types": ["node"],
+    "typeRoots": ["./node_modules/@types"]
   },
-  "include": [
-    "src/**/*",
-    "vite.config.ts"
-  ],
-  "exclude": ["node_modules", "dist"],
-  "references": [{ "path": "../shared" }]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }
