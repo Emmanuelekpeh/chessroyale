@@ -8,7 +8,7 @@
     "server"
   ],
   "scripts": {
-    "build": "yarn workspaces run build",
+    "build": "yarn workspace @chessroyale/shared build && yarn workspace @chessroyale/server build && yarn workspace @chessroyale/client build",
     "dev": "concurrently \"yarn workspace @chessroyale/client dev\" \"yarn workspace @chessroyale/server dev\"",
     "start": "yarn workspace @chessroyale/server start"
   },
