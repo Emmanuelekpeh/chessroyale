@@ -1,0 +1,32 @@
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(30) NOT NULL,
+  rating INTEGER NOT NULL DEFAULT 1200,
+  games_played INTEGER NOT NULL DEFAULT 0,
+  games_won INTEGER NOT NULL DEFAULT 0,
+  puzzles_solved INTEGER NOT NULL DEFAULT 0,
+  score INTEGER NOT NULL DEFAULT 0,
+  current_streak INTEGER NOT NULL DEFAULT 0,
+  best_streak INTEGER NOT NULL DEFAULT 0,
+  total_points INTEGER NOT NULL DEFAULT 0,
+  level INTEGER NOT NULL DEFAULT 1,
+  is_guest BOOLEAN NOT NULL DEFAULT false
+);
+
+CREATE TABLE IF NOT EXISTS puzzles (
+  id SERIAL PRIMARY KEY,
+  creator_id INTEGER NOT NULL,
+  fen TEXT NOT NULL,
+  solution TEXT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT NOT NULL,
+  rating INTEGER NOT NULL,
+  tactical_theme TEXT[] NOT NULL,
+  difficulty VARCHAR(20) NOT NULL,
+  verified BOOLEAN NOT NULL DEFAULT false,
+  hints_available INTEGER NOT NULL,
+  point_value INTEGER NOT NULL,
+  total_attempts INTEGER NOT NULL DEFAULT 0,
+  successful_attempts INTEGER NOT NULL DEFAULT 0,
+  average_time_to_solve INTEGER NOT NULL DEFAULT 0
+);
