@@ -2,22 +2,21 @@
   "compilerOptions": {
     "target": "es2020",
     "module": "commonjs",
-    "rootDir": ".",              // Changed from ./src to .
+    "rootDir": ".",
     "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "declaration": true,
-    "baseUrl": ".",              // Add this to help with imports
-    "paths": {                   // Optional: Add this if you want to create import aliases
+    "baseUrl": ".",
+    "paths": {
       "@/*": ["src/*"],
-      "@types/*": ["types/*"]
+      "@types/*": ["src/types/*"],
+      "@game/*": ["src/types/game/*"]
     }
   },
-  "include": [                   // Updated include paths
-    "src/**/*",
-    "types/**/*"
+  "include": [
+    "src/**/*"
   ],
   "exclude": [
     "node_modules",
