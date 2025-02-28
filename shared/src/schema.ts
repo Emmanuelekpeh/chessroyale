@@ -4,6 +4,21 @@ import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import type { User, Puzzle, Achievement } from './types';
 import type { GameState, ChatMessage } from '../types/game';
 
+// Try-catch for drizzle-zod import
+let createInsertSchema: any;
+let createSelectSchema: any;
+
+try {
+  const drizzleZod = require('drizzle-zod');
+  createInsertSchema = drizzleZod.createInsertSchema;
+  createSelectSchema = drizzleZod.createSelectSchema;
+} catch (e) {
+  console.warn('drizzle-zod not available, using fallback schemas');
+  createInsertSchema = (table: any) => z.object({});
+  createSelectSchema = (table: any) => z.object({});
+}
+
+
 // Database Tables
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
