@@ -1,10 +1,9 @@
 import { z } from 'zod';
 import { pgTable, serial, text, integer, boolean, varchar } from 'drizzle-orm/pg-core';
-import { type PgArray } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
-import type { User, Puzzle, Achievement } from './types';
-// Update the import to use the alias
-import type { GameState, ChatMessage } from '@types/game';
+import type { User, Puzzle, Achievement } from '@/types';
+import type { GameState, ChatMessage } from '@/types/game';
+
 
 // Database Tables
 export const users = pgTable('users', {
