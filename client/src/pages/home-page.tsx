@@ -1,10 +1,9 @@
+import React from 'react';
 import { useAuth } from "@/hooks/use-auth";
-import { useQuery } from "@tanstack/react-query";
-import { Game, User } from "@shared/schema";
-import GameList from "@/components/game-list";
-import Leaderboard from "@/components/leaderboard";
-import { Button } from "@/components/ui/button";
-import { Crown, LogOut } from "lucide-react";
+import { useLocation } from "wouter";
+import { GameList } from "@/components/game-list";
+import { Leaderboard } from "@/components/leaderboard";
+import { ScoreDisplay } from "@/components/score-display";
 
 export default function HomePage() {
   const { user, logoutMutation } = useAuth();
