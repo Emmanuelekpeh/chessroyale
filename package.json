@@ -4,21 +4,17 @@
   "version": "1.0.0",
   "workspaces": [
     "shared",
-    "client",
-    "server"
+    "server",
+    "client"
   ],
   "scripts": {
-    "build": "yarn build:shared && yarn build:server && yarn build:client",
-    "build:shared": "yarn workspace @chessroyale/shared build",
-    "build:server": "yarn workspace @chessroyale/server build",
-    "build:client": "yarn workspace @chessroyale/client build",
-    "dev": "concurrently \"yarn workspace @chessroyale/client dev\" \"yarn workspace @chessroyale/server dev\"",
-    "test": "yarn workspaces run test",
-    "lint": "yarn workspaces run lint"
+    "build": "yarn install && yarn workspaces run build",
+    "dev": "yarn workspaces run dev",
+    "start": "yarn workspace @chessroyale/server start"
   },
   "devDependencies": {
-    "concurrently": "^8.0.0",
-    "typescript": "5.6.3",
-    "@types/node": "^20.16.11"
+    "concurrently": "^8.2.2",
+    "typescript": "^5.3.3",
+    "@types/node": "^20.11.0"
   }
 }

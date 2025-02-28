@@ -1,11 +1,20 @@
 #!/bin/bash
 
 # Remove any existing lock files
-rm -f package-lock.json
-rm -f yarn.lock
+rm -f package-lock.json yarn.lock
 
-# Install root dependencies
+# Install dependencies
 yarn install
+
+
+# Install workspace-specific dependencies
+yarn workspace @chessroyale/shared add zod drizzle-orm
+yarn workspace @chessroyale/shared add -D typescript @types/node
+
+yarn workspace @chessroyale/server add express passport passport-local express-session memorystore cors compression @neondatabase/serverless drizzle-orm ws nanoid
+yarn workspace @chessroyale/server add -D typescript @types/node @types/express @types/passport @types/passport-local @types/express-session @types/cors @types/compression @types/ws vite
+
+yarn workspace @chessroyale/client add react react-dom # ... other client deps
 
 # Install shared package dependencies
 yarn workspace @chessroyale/shared add -D typescript @types/node vitest
@@ -18,131 +27,55 @@ yarn workspace @chessroyale/server add -D typescript @types/node @types/express 
 yarn workspace @chessroyale/client add @tanstack/react-query chess.js react react-dom react-chessboard wouter
 yarn workspace @chessroyale/client add -D @vitejs/plugin-react typescript @types/node @types/react @types/react-dom vite autoprefixer postcss
 
-# Create necessary TypeScript config files if they don't exist
+
+# Update TypeScript configurations
 cat > tsconfig.base.json << EOL
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "ESNext",
+    "module": "ES2020",
     "moduleResolution": "node",
     "esModuleInterop": true,
     "strict": true,
     "skipLibCheck": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
+    "forceConsistentCasingInFileNames": true,
     "composite": true,
-    "incremental": true
+    "declaration": true
   }
 }
 EOL
 
-# Ensure Vite config exists
-cat > vite.config.mts << EOL
-import { defineConfig } from 'vite';
-import react from "@vitejs/plugin-react";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "client", "src"),
-      "@shared": path.resolve(__dirname, "shared"),
-    },
-  },
-  root: path.resolve(__dirname, "client"),
-  build: {
-    outDir: path.resolve(__dirname, "dist/public"),
-    emptyOutDir: true,
-    sourcemap: true,
-  },
-  server: {
-    port: parseInt(process.env.PORT || '3000'),
-    strictPort: true,
-    host: true,
-  }
-});
-EOL
-
-# Create client tsconfig
-cat > client/tsconfig.json << EOL
-{
-  "extends": "../tsconfig.base.json",
-  "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
-    "skipLibCheck": true,
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx",
-    "types": ["vite/client", "node"]
-  },
-  "include": ["src"],
-  "references": [{ "path": "./tsconfig.node.json" }]
-}
-EOL
-
-# Create server tsconfig
-cat > server/tsconfig.json << EOL
-{
-  "extends": "../tsconfig.base.json",
-  "compilerOptions": {
-    "target": "ES2020",
-    "module": "CommonJS",
-    "outDir": "dist",
-    "rootDir": "src",
-    "types": ["node"],
-    "typeRoots": ["./node_modules/@types"]
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
-}
-EOL
-
-# Create shared tsconfig
 cat > shared/tsconfig.json << EOL
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "CommonJS",
     "outDir": "dist",
-    "rootDir": "src",
-    "declaration": true
+    "rootDir": "src"
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
 EOL
 
-# Add PostCSS config
-cat > postcss.config.js << EOL
-module.exports = {
-  plugins: {
-    'postcss-import': {},
-    'tailwindcss/nesting': {},
-    tailwindcss: {},
-    autoprefixer: {},
-  }
+cat > server/tsconfig.json << EOL
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@shared/*": ["../shared/src/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"],
+  "references": [{ "path": "../shared" }]
 }
 EOL
 
-# Create directories if they don't exist
-mkdir -p shared/src
-mkdir -p server/src
-mkdir -p client/src
-
 # Build packages in order
-yarn build:shared
-yarn build:server
-yarn build:client
+yarn workspace @chessroyale/shared build
+yarn workspace @chessroyale/server build
+yarn workspace @chessroyale/client build
