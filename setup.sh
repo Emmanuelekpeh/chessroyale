@@ -8,15 +8,15 @@ rm -f yarn.lock
 yarn install
 
 # Install shared package dependencies
-yarn workspace @chessroyale/shared add -D typescript@5.6.3 @types/node@20.16.11 vitest@3.0.5
+yarn workspace @chessroyale/shared add -D typescript @types/node vitest
 
 # Install server package dependencies
-yarn workspace @chessroyale/server add express@4.0.0 drizzle-orm@0.28.0
-yarn workspace @chessroyale/server add -D typescript@5.6.3 @types/node@20.16.11 @types/express@4.17.21 drizzle-kit@0.19.0 tsx@3.12.0
+yarn workspace @chessroyale/server add express drizzle-orm
+yarn workspace @chessroyale/server add -D typescript @types/node @types/express @types/express-session @types/passport @types/passport-local @types/ws @types/cors @types/compression drizzle-kit tsx
 
 # Install client package dependencies
-yarn workspace @chessroyale/client add @tanstack/react-query@5.66.5 chess.js@1.0.0 react@18.3.1 react-dom@18.3.1 react-chessboard@4.7.2 wouter@3.6.0
-yarn workspace @chessroyale/client add -D @vitejs/plugin-react@4.3.2 typescript@5.6.3 @types/node@20.16.11 @types/react@18.3.11 @types/react-dom@18.3.1 vite@5.4.9 autoprefixer@10.4.20 postcss@8.4.47 postcss-import@16.0.0 tailwindcss@3.4.14
+yarn workspace @chessroyale/client add @tanstack/react-query chess.js react react-dom react-chessboard wouter
+yarn workspace @chessroyale/client add -D @vitejs/plugin-react typescript @types/node @types/react @types/react-dom vite autoprefixer postcss
 
 # Create necessary TypeScript config files if they don't exist
 cat > tsconfig.base.json << EOL
