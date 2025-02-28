@@ -1,27 +1,16 @@
 services:
   - type: web
     name: chessroyale
-    env: node
-    plan: standard
-    buildCommand: |
-      # Install dependencies in the root directory
-      yarn install
-      # Install dependencies in the client directory
-      cd client
-      yarn install
-      cd ..
-      # Install dependencies in the server directory
-      cd server
-      yarn install
-      cd ..
-      # Install dependencies in the shared directory
-      cd shared
-      yarn install
-      cd ..
-      # Install additional type declarations
-      yarn add -D @types/express-rate-limit
-      yarn add -D @types/vite
-      yarn add -D @types/node
-      # Build the project
-      yarn run build
-    startCommand: yarn start
+    env: static
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: your-database-name
+          property: connectionString
+      - key: SESSION_SECRET
+        fromSecret: your-session-secret
