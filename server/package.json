@@ -7,7 +7,6 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node-dev --respawn src/index.ts"
-  }
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.6.0",
@@ -20,11 +19,7 @@
     "jsonwebtoken": "^9.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
-    "drizzle-orm": "^0.27.0",
-    "postgres": "^3.3.5",
     "socket.io": "^4.6.1",
-    "vite": "^4.3.9",
-    "@vitejs/plugin-react": "^4.0.0",
     "ws": "^8.13.0"
   },
   "devDependencies": {
