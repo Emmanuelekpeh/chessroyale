@@ -5,6 +5,8 @@ echo "Starting dependency fix process..."
 # Navigate to server directory
 cd server
 
+yarn add -D @types/express @types/passport @types/passport-local @types/bcrypt @types/jsonwebtoken @types/ws @types/compression
+
 # Force reinstall types
 echo "Reinstalling type declarations..."
 npm install --save-dev \
