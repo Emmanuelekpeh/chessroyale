@@ -208,7 +208,7 @@ export async function createGuestUser(): Promise<User> {
     BCRYPT_SALT_ROUNDS
   );
   const user = await createUser(guestId, passwordHash);
-  
+
   // Update user to mark as guest
   return {
     ...user,
