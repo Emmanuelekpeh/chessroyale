@@ -13,8 +13,10 @@
     },
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "allowImportingTsExtensions": true,  // Add this to fix the .mts issue
-    "rootDir": ".",  // Change this to allow imports from outside src
+    "rootDirs": [
+      "./",
+      "../"
+    ],
     "noImplicitAny": false  // Temporarily add this to fix implicit any errors
   },
   "include": ["src/**/*", "../vite.config.mts"],
