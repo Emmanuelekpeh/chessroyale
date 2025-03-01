@@ -2,6 +2,7 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "NodeNext",
+    "rootDir": "./",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "moduleResolution": "NodeNext",
     "esModuleInterop": true,
@@ -16,7 +17,7 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
+      "@/*": ["./*"],
       "@shared/*": ["./shared/src/*"],
       "@server/*": ["./server/src/*"],
       "@client/*": ["./client/src/*"]
