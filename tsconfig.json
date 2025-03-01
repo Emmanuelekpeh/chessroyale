@@ -12,6 +12,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
+    "allowImportingTsExtensions": true
     "typeRoots": ["./node_modules/@types", "./types"],
     "jsx": "react-jsx",
     "incremental": true,
