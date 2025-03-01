@@ -8,9 +8,9 @@ import type { GameState, ChatMessage } from '@/types/game';
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
   username: varchar('username', { length: 30 }).notNull(),
-  // Add these two fields:
+  // Fixed fields:
   passwordHash: varchar('password_hash', { length: 255 }).notNull(),
-  email: z.string().email().optional(), 
+  email: varchar('email', { length: 255 }), // Now correctly a varchar column, and not .notNull() makes it optional
   // Existing fields:
   rating: integer('rating').notNull().default(1200),
   gamesPlayed: integer('games_played').notNull().default(0),
@@ -72,7 +72,7 @@ export const userSchema = z.object({
   username: z.string().min(3).max(30),
   // Add these two fields:
   passwordHash: z.string(),
-  email: z.string().email(),
+  email: z.string().email().optional(), // This is correctly optional in the Zod schema
   // Existing fields:
   rating: z.number().default(1200),
   gamesPlayed: z.number().default(0),
