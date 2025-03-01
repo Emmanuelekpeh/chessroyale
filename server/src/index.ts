@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { json, urlencoded } from "express";
 import cors from "cors";
 import rateLimit from 'express-rate-limit';
@@ -17,21 +17,17 @@ async function initializeServer() {
   try {
     logger.info('Starting server initialization...');
 
-    // Find a free port with our optimized implementation
     const PORT = await findFreePort(config.server.port);
     logger.info(`Found free port: ${PORT}`);
 
-    // Basic middleware setup
     logger.info('Setting up middleware...');
     app.use(cors());
     app.use(compression());
     app.use(json());
     app.use(urlencoded({ extended: false }));
 
-    // Register health router first
     app.use('/api', healthRouter);
 
-    // Rate limiting
     logger.info('Configuring rate limiting...');
     const limiter = rateLimit({
       windowMs: config.server.rateLimit.windowMs,
@@ -40,16 +36,14 @@ async function initializeServer() {
     });
     app.use('/api/', limiter);
 
-    // Request timeout middleware
-    app.use((req, res, next) => {
+    app.use((req: Request, res: Response, next: NextFunction) => {
       req.setTimeout(config.server.timeout, () => {
         res.status(408).json({ error: 'Request timeout' });
       });
       next();
     });
 
-    // Error handling middleware
-    app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
       const errorId = Date.now().toString(36);
       logger.error('Server error:', { 
         error: err, 
@@ -74,17 +68,14 @@ async function initializeServer() {
       });
     });
 
-    // Create HTTP server
     logger.info('Creating HTTP server...');
     const server = createServer(app);
 
-    // Setup routes and Vite
     logger.info('Registering routes...');
     await registerRoutes(app);
     logger.info('Setting up Vite...');
     await setupVite(app, server);
 
-    // Start server with graceful shutdown
     return new Promise((resolve, reject) => {
       const serverInstance = server.listen(PORT, '0.0.0.0', () => {
         logger.info(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
@@ -118,7 +109,6 @@ async function initializeServer() {
   }
 }
 
-// Start server with retries
 async function startWithRetries(maxRetries = 3) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
