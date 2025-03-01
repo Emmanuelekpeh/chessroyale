@@ -10,7 +10,7 @@ export const users = pgTable('users', {
   username: varchar('username', { length: 30 }).notNull(),
   // Add these two fields:
   passwordHash: varchar('password_hash', { length: 255 }).notNull(),
-  email: varchar('email', { length: 255 }), 
+  email: z.string().email().optional(), 
   // Existing fields:
   rating: integer('rating').notNull().default(1200),
   gamesPlayed: integer('games_played').notNull().default(0),
