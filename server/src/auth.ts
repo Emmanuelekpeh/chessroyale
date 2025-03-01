@@ -26,7 +26,7 @@ interface User {
 
 // Setting up passport auth
 passport.use(
-  new LocalStrategy(async (username, password, done) => {
+  new LocalStrategy(async (username: string, password: string, done: passport.DoneCallback) => {
     try {
       const user = await getUserByUsername(username);
       if (!user) {
@@ -45,11 +45,11 @@ passport.use(
   })
 );
 
-passport.serializeUser((user: any, done) => {
+passport.serializeUser((user: User, done: (err: any, id?: number) => void) => {
   done(null, user.id);
 });
 
-passport.deserializeUser(async (id: number, done) => {
+passport.deserializeUser(async (id: number, done: (err: any, user?: User) => void) => {
   try {
     const user = await getUserById(id);
     done(null, user);
@@ -63,8 +63,8 @@ export function configureAuth(app: express.Application) {
   app.use(passport.session() as express.RequestHandler);
 
   // Login endpoint
-  app.post("/api/auth/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
+  app.post("/api/auth/login", (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    passport.authenticate("local", (err: Error | null, user: User | false, info: { message: string }) => {
       if (err) {
         return next(err);
       }
@@ -72,7 +72,7 @@ export function configureAuth(app: express.Application) {
         return res.status(401).json({ message: info.message });
       }
 
-      req.logIn(user, (err) => {
+      req.logIn(user, (err: Error) => {
         if (err) {
           return next(err);
         }
@@ -104,7 +104,7 @@ export function configureAuth(app: express.Application) {
   // Register endpoint
   app.post(
     "/api/auth/register",
-    async (req, res, next) => {
+    async (req: express.Request, res: express.Response, next: express.NextFunction) => {
       const { username, password, email } = req.body;
 
       if (!username || !password) {
@@ -151,7 +151,7 @@ export function configureAuth(app: express.Application) {
   );
 
   // Logout endpoint
-  app.post("/api/auth/logout", (req, res) => {
+  app.post("/api/auth/logout", (req: express.Request, res: express.Response) => {
     req.logout(() => {
       res.status(200).json({ message: "Logout successful" });
     });
