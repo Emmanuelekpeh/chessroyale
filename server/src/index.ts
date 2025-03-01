@@ -1,132 +1,171 @@
-import express, { Request, Response, NextFunction } from "express";
-import { json, urlencoded } from "express";
-import cors from "cors";
-import rateLimit from 'express-rate-limit';
-import compression from 'compression';
-import { registerRoutes } from "./routes";
-import { setupVite } from "./vite";
-import { createServer } from "http";
-import config from "../config";
-import healthRouter from "./utils/health";
-import { findFreePort } from "./utils/port";
-import { logger } from "./utils/logger";
+import express from 'express';
+import dotenv from 'dotenv';
+import { pool } from './db';
+import http from 'http';
+import cors from 'cors';
+import session from 'express-session';
+import passport from 'passport';
+import { Server } from 'socket.io';
+import path from 'path';
+import cookieParser from 'cookie-parser';
+import morgan from 'morgan';
+import helmet from 'helmet';
+import { createClient } from 'redis';
+import connectRedis from 'connect-redis';
+import { v4 as uuidv4 } from 'uuid';
 
-const app = express();
+// Import routes
+import authRoutes from './routes/auth';
+import userRoutes from './routes/users';
+import gameRoutes from './routes/games';
+import puzzleRoutes from './routes/puzzles';
 
-async function initializeServer() {
+// Import socket handlers
+import { setupSocketHandlers } from './socket';
+
+// Import passport config
+import './config/passport';
+
+// Load environment variables
+dotenv.config();
+
+// Create Redis client
+let RedisStore;
+let redisClient;
+if (process.env.REDIS_URL) {
+  RedisStore = connectRedis(session);
+  redisClient = createClient({ url: process.env.REDIS_URL });
+  
+  redisClient.on('error', (err) => console.log('Redis Client Error', err));
+  redisClient.on('connect', () => console.log('Connected to Redis'));
+  
+  (async () => {
+    await redisClient.connect();
+  })();
+}
+
+async function startServer() {
   try {
-    logger.info('Starting server initialization...');
-
-    const PORT = await findFreePort(config.server.port);
-    logger.info(`Found free port: ${PORT}`);
-
-    logger.info('Setting up middleware...');
-    app.use(cors());
-    app.use(compression());
-    app.use(json());
-    app.use(urlencoded({ extended: false }));
-
-    app.use('/api', healthRouter);
-
-    logger.info('Configuring rate limiting...');
-    const limiter = rateLimit({
-      windowMs: config.server.rateLimit.windowMs,
-      max: config.server.rateLimit.max,
-      message: { error: 'Too many requests, please try again later.' }
-    });
-    app.use('/api/', limiter);
-
-    app.use((req: Request, res: Response, next: NextFunction) => {
-      req.setTimeout(config.server.timeout, () => {
-        res.status(408).json({ error: 'Request timeout' });
-      });
-      next();
-    });
-
-    app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-      const errorId = Date.now().toString(36);
-      logger.error('Server error:', { 
-        error: err, 
-        errorId,
-        stack: err.stack,
-        path: _req.path,
-        method: _req.method
-      });
-      
-      if (err.name === 'ValidationError') {
-        return res.status(400).json({
-          error: 'Validation error',
-          details: err.message,
-          errorId
-        });
+    // Test database connection
+    await pool.query('SELECT NOW()');
+    console.log('Database connection successful');
+    
+    const app = express();
+    const server = http.createServer(app);
+    const io = new Server(server, {
+      cors: {
+        origin: process.env.CLIENT_URL || 'http://localhost:3000',
+        methods: ['GET', 'POST'],
+        credentials: true
       }
+    });
+    
+    // Middleware
+    app.use(helmet({
+      contentSecurityPolicy: false // Modify as needed for your app
+    }));
+    app.use(morgan('dev'));
+    app.use(cors({
+      origin: process.env.CLIENT_URL || 'http://localhost:3000',
+      credentials: true
+    }));
+    app.use(express.json());
+    app.use(express.urlencoded({ extended: true }));
+    app.use(cookieParser());
+    
+    // Session configuration
+    const sessionMiddleware = session({
+      store: process.env.REDIS_URL ? new RedisStore({ client: redisClient }) : undefined,
+      secret: process.env.SESSION_SECRET || 'chess-royale-secret',
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
+      },
+      genid: () => uuidv4()
+    });
+    
+    app.use(sessionMiddleware);
+    app.use(passport.initialize());
+    app.use(passport.session());
+    
+    // Wrap socket.io with session middleware
+    io.use((socket, next) => {
+      sessionMiddleware(socket.request as any, {} as any, next as any);
+    });
+    
+    // API routes
+    app.use('/api/auth', authRoutes);
+    app.use('/api/users', userRoutes);
+    app.use('/api/games', gameRoutes);
+    app.use('/api/puzzles', puzzleRoutes);
+    
+    // Health check endpoint
+    app.get('/api/health', (req, res) => {
+      res.status(200).json({ status: 'ok', timestamp: new Date() });
+    });
+    
+    // Serve static files in production
+    if (process.env.NODE_ENV === 'production') {
+      app.use(express.static(path.join(__dirname, '../../client/build')));
       
-      res.status(500).json({ 
-        error: 'Internal server error',
-        errorId,
-        retry: true
+      app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, '../../client/build/index.html'));
+      });
+    }
+    
+    // Error handling middleware
+    app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+      console.error(err);
+      const statusCode = err.statusCode || 500;
+      res.status(statusCode).json({
+        error: {
+          message: err.message || 'Internal Server Error',
+          status: statusCode
+        }
       });
     });
-
-    logger.info('Creating HTTP server...');
-    const server = createServer(app);
-
-    logger.info('Registering routes...');
-    await registerRoutes(app);
-    logger.info('Setting up Vite...');
-    await setupVite(app, server);
-
-    return new Promise((resolve, reject) => {
-      const serverInstance = server.listen(PORT, '0.0.0.0', () => {
-        logger.info(`Server running on port ${PORT} (http://0.0.0.0:${PORT})`);
-        resolve(serverInstance);
-      });
-
-      serverInstance.on('error', (error: NodeJS.ErrnoException) => {
-        logger.error('Server startup error:', { error });
-        reject(error);
-      });
-
-      process.on('SIGTERM', () => {
-        logger.info('SIGTERM received, shutting down gracefully');
-        serverInstance.close(() => {
-          logger.info('Server closed');
-          process.exit(0);
-        });
-      });
-
-      process.on('uncaughtException', (error) => {
-        logger.error('Uncaught exception:', error);
-        serverInstance.close(() => {
-          process.exit(1);
-        });
-      });
+    
+    // Set up socket handlers
+    setupSocketHandlers(io);
+    
+    // Start server
+    const PORT = process.env.PORT || 4000;
+    server.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
     });
-
+    
+    // Handle shutdown gracefully
+    const gracefulShutdown = async () => {
+      console.log('Shutting down server...');
+      // Close all database connections
+      await pool.end();
+      if (redisClient) {
+        await redisClient.disconnect();
+      }
+      process.exit(0);
+    };
+    
+    process.on('SIGINT', gracefulShutdown);
+    process.on('SIGTERM', gracefulShutdown);
+    
   } catch (error) {
-    logger.error('Fatal error during server initialization:', { error });
+    console.error('Failed to start server:', error);
     process.exit(1);
   }
 }
 
-async function startWithRetries(maxRetries = 3) {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      logger.info(`Starting server attempt ${attempt}/${maxRetries}`);
-      await initializeServer();
-      return;
-    } catch (error) {
-      if (attempt === maxRetries) {
-        logger.error('Failed to start server after all retries');
-        process.exit(1);
-      }
-      logger.warn(`Retrying in 1 second... (${maxRetries - attempt} attempts left)`);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-  }
-}
-
-startWithRetries().catch(error => {
-  logger.error('Unhandled error during server startup:', { error });
+// Add uncaught exception handlers for better reliability
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception:', err);
   process.exit(1);
 });
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled rejection at:', promise, 'reason:', reason);
+  // Don't exit here to allow graceful shutdown on critical errors
+});
+
+startServer();
