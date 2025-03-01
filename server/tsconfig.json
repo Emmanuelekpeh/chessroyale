@@ -19,7 +19,7 @@
     ],
     "noImplicitAny": false  // Temporarily add this to fix implicit any errors
   },
-  "include": ["src/**/*", "../vite.config.mts"],
+  "include": ["src/**/*"],
   "references": [
     {
       "path": "../shared"
